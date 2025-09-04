@@ -1,12 +1,17 @@
 import { useEffect, useReducer } from "react";
 import Header from "./Header.js";
 import Main from "./Main.js";
+import Loader from "./Loader";
+import Error from "./Error.js";
+import StartScreen from "./StartScreen.js";
+import Question from "./Question";
 
 const initalState = {
   questions: [],
 
   //loading ,error ready active finished
   status: "loading",
+  index: 0,
 };
 function reducer(state, action) {
   switch (action.type) {
@@ -16,10 +21,20 @@ function reducer(state, action) {
         questions: action.payload,
         status: "ready",
       };
-    case "error":
+    case "dataFailed":
       return {
         ...state,
-        status: "dataFailed",
+        status: "error",
+      };
+    case "start":
+      return {
+        ...state,
+        status: "active",
+      };
+    case "next":
+      return {
+        ...state,
+        index: action.payload,
       };
     default:
       throw new Error("Unkonwn Request");
@@ -27,7 +42,11 @@ function reducer(state, action) {
 }
 
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, initalState);
+  const [{ questions, status, index }, dispatch] = useReducer(
+    reducer,
+    initalState
+  );
+
   useEffect(function () {
     async function question() {
       try {
@@ -42,11 +61,20 @@ export default function App() {
     }
     question();
   }, []);
+  const questionLength = questions.length;
   return (
     <div className="app">
       <Header />
       <Main>
-        <p>1/15</p>; <p>Questions</p>
+        {status === "loading" && <Loader />}
+
+        {status === "error" && <Error />}
+        {status === "ready" && (
+          <StartScreen length={questionLength} dispatch={dispatch} />
+        )}
+        {status === "active" && (
+          <Question question={questions} index={index} dispatch={dispatch} />
+        )}
       </Main>
     </div>
   );
