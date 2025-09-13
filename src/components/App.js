@@ -5,6 +5,11 @@ import Loader from "./Loader";
 import Error from "./Error.js";
 import StartScreen from "./StartScreen.js";
 import Question from "./Question";
+import NextButton from "./NextButton.js";
+import Progress from "./Progress.js";
+import FinishScreen from "./FinishScreen.js";
+import Timer from "./Timer.js";
+import Footer from "./Footer.js";
 
 const initalState = {
   questions: [],
@@ -12,6 +17,9 @@ const initalState = {
   //loading ,error ready active finished
   status: "loading",
   index: 0,
+  points: 0,
+  timer: 5,
+
   answer: null,
 };
 function reducer(state, action) {
@@ -31,22 +39,39 @@ function reducer(state, action) {
       return {
         ...state,
         status: "active",
+        timer: action.payload,
       };
     case "newAnswer":
+      const question = state.questions.at(state.index);
       return {
         ...state,
         answer: action.payload,
+        points:
+          action.payload === question.correctOption
+            ? state.points + question.points
+            : state.points,
       };
+    case "next":
+      return {
+        ...state,
+
+        index: action.payload,
+        answer: null,
+      };
+
+    case "end":
+      return { ...state, status: "finish" };
+    case "restart":
+      return { ...initalState, questions: state.questions, status: "ready" };
+
     default:
       throw new Error("Unkonwn Request");
   }
 }
 
 export default function App() {
-  const [{ questions, status, index, answer }, dispatch] = useReducer(
-    reducer,
-    initalState
-  );
+  const [{ questions, status, index, answer, points, timer }, dispatch] =
+    useReducer(reducer, initalState);
 
   useEffect(function () {
     async function question() {
@@ -62,7 +87,10 @@ export default function App() {
     }
     question();
   }, []);
+
   const questionLength = questions.length;
+  const totalPoint = questions.reduce((prev, cur) => prev + cur.points, 0);
+
   return (
     <div className="app">
       <Header />
@@ -74,11 +102,38 @@ export default function App() {
           <StartScreen length={questionLength} dispatch={dispatch} />
         )}
         {status === "active" && (
-          <Question
-            question={questions[index]}
+          <>
+            <Progress
+              index={index}
+              numberofQuestion={questions.length}
+              points={points}
+              totalPoint={totalPoint}
+              answer={answer}
+            />
+            <Question
+              question={questions[index]}
+              dispatch={dispatch}
+              answer={answer}
+            />
+            <Footer>
+              <Timer timer={timer} dispatch={dispatch} />
+              <NextButton
+                dispatch={dispatch}
+                index={index}
+                answer={answer}
+                questions={questions}
+              />
+            </Footer>
+          </>
+        )}
+        {status === "finish" ? (
+          <FinishScreen
+            points={points}
+            totalPoint={totalPoint}
             dispatch={dispatch}
-            answer={answer}
           />
+        ) : (
+          ""
         )}
       </Main>
     </div>
