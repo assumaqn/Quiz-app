@@ -18,10 +18,11 @@ const initalState = {
   status: "loading",
   index: 0,
   points: 0,
-  timer: 5,
+  timer: null,
 
   answer: null,
 };
+const SEC = 20;
 function reducer(state, action) {
   switch (action.type) {
     case "dataRecived":
@@ -39,7 +40,7 @@ function reducer(state, action) {
       return {
         ...state,
         status: "active",
-        timer: action.payload,
+        timer: state.questions.length * SEC,
       };
     case "newAnswer":
       const question = state.questions.at(state.index);
@@ -57,6 +58,12 @@ function reducer(state, action) {
 
         index: action.payload,
         answer: null,
+      };
+    case "tick":
+      return {
+        ...state,
+        timer: state.timer - 1,
+        status: state.timer === 0 ? "finish" : state.status,
       };
 
     case "end":
